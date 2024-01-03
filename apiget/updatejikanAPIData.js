@@ -39,7 +39,7 @@ const getJikan = async (page = 1, retries = 3) => {
 const saveAnimeToDb = async (animeData) => {
   const updateData = {};
   Object.keys(animeData).forEach((key) => {
-    if (key !== "characters" && key !== "staff") {
+    if (key !== "characters" && key !== "staff" && key !== "recommendations") {
       // 排除不想更新的字段
       updateData[`apiData.${key}`] = animeData[key];
     }
@@ -57,8 +57,8 @@ const saveAnimeToDb = async (animeData) => {
   }
 };
 
-const getAllAnime1 = async () => {
-  let page = 963;
+const updatejikanAPIData = async () => {
+  let page = 1;
   const maxRetries = Infinity; // 设置最大重试次数
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -96,4 +96,4 @@ const getAllAnime1 = async () => {
   }
 };
 
-module.exports = getAllAnime1;
+module.exports = updatejikanAPIData;

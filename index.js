@@ -1,12 +1,15 @@
 require("dotenv").config();
+const compression = require("compression");
 const express = require("express");
 const app = express();
 const mongoose = require("mongoose");
 const anime = require("./routes/anime");
 const cors = require("cors");
 const externalTiming = require("./routes/externalTiming");
-const getAllAnime1 = require("./apiget/jikanwithoutCharAndStaff");
-const getAllAnime = require("./apiget/jikanCharAndStaff");
+const updatejikanAPIData = require("./apiget/updatejikanAPIData");
+const {
+  updateAllAnimeRecommendations,
+} = require("./helpers/animeRecommendation");
 
 app.listen(8080, () => {
   console.log("Server is running on port 8080");
@@ -38,6 +41,7 @@ connectWithRetry(); // Start the initial connectionnodemon
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
+app.use(compression());
 
 app.use("/anime", anime);
 app.use("/external-timing", externalTiming);
@@ -45,3 +49,5 @@ app.use("/external-timing", externalTiming);
 app.get("/", (req, res) => {
   res.send("Hello World");
 });
+
+updatejikanAPIData();

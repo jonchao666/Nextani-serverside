@@ -4,275 +4,147 @@ const Anime = require("../models/Anime");
 const {
   getNextSeasonAndYear,
   getLastSeasonAndYear,
-} = require("../animeHeaplers");
+} = require("../helpers/getSeasonAndYear");
 const verifyApiKey = require("../validation");
-const getAllAnime = require("../apiget/anilist");
+const { calculateScore } = require("../helpers/animeRecommendation");
 
-function lowercaseFirstLetter(str) {
-  return str.charAt(0).toLowerCase() + str.slice(1);
-}
-
-router.get("/thisSeasonPopular", verifyApiKey, async (req, res) => {
-  const seasonYear = getLastSeasonAndYear();
-  const year = seasonYear[0].year;
-  const season = seasonYear[0].season;
+router.get("/", verifyApiKey, async (req, res) => {
   try {
-    let foundAnimes = await Anime.find(
-      {
-        $and: [
-          { "apiData.year": year },
-          { "apiData.season": season },
-          {
-            $or: [
-              { "apiData.type": "Movie" },
-              { "apiData.type": "TV" },
-              { "apiData.type": "OVA" },
-              { "apiData.type": "Special" },
-            ],
-          },
-        ],
-      },
-      {
-        "apiData.images.webp.large_image_url": 1,
-        "apiData.title": 1,
-        "apiData.score": 1,
-        "apiData.aired.prop.from.year": 1,
+    // 获取查询参数
+    const {
+      mal_id,
+      type,
+      season,
+      sortBy,
+      genre,
+      director,
+      year,
+      status,
+      rating,
+      page = 1,
+      select = false,
+      limit = 18,
+    } = req.query;
 
-        "apiData.genres.name": 1,
+    let query = {};
+
+    const skip = (page - 1) * limit; // 跳过的文档数
+
+    if (mal_id) {
+      if (Array.isArray(mal_id)) {
+        query["mal_id"] = mal_id.map((id) => id);
+      } else {
+        query["mal_id"] = mal_id;
       }
-    )
-      .limit(18)
-      .sort("apiData.popularity");
-
-    return res.json(foundAnimes);
-  } catch (e) {
-    console.error(e.message);
-    return res.status(500).json({ message: "internal server error" });
-  }
-});
-
-router.get("/allTimePopular", verifyApiKey, async (req, res) => {
-  try {
-    let foundAnimes = await Anime.find(
-      {
-        $or: [
-          { "apiData.type": "Movie" },
-          { "apiData.type": "TV" },
-          { "apiData.type": "OVA" },
-          { "apiData.type": "Special" },
-        ],
-      },
-      {
-        "apiData.images.webp.large_image_url": 1,
-        "apiData.title": 1,
-        "apiData.score": 1,
-        "apiData.aired.prop.from.year": 1,
-
-        "apiData.genres.name": 1,
-      }
-    )
-      .limit(18)
-      .sort({ "apiData.members": -1 });
-
-    return res.json(foundAnimes);
-  } catch (e) {
-    console.error(e.message);
-    return res.status(500).json({ message: "internal server error" });
-  }
-});
-
-router.get("/nextSeason", verifyApiKey, async (req, res) => {
-  const nextSeasonYear = getNextSeasonAndYear();
-  const year = nextSeasonYear[0].year;
-  const season = nextSeasonYear[0].season;
-  try {
-    let foundAnimes = await Anime.find(
-      {
-        $and: [
-          { "apiData.year": year },
-          { "apiData.season": season },
-          {
-            $or: [
-              { "apiData.type": "Movie" },
-              { "apiData.type": "TV" },
-              { "apiData.type": "OVA" },
-              { "apiData.type": "Special" },
-            ],
-          },
-        ],
-      },
-      {
-        "apiData.images.webp.large_image_url": 1,
-        "apiData.title": 1,
-        "apiData.score": 1,
-        "apiData.aired.prop.from.year": 1,
-
-        "apiData.genres.name": 1,
-      }
-    )
-      .limit(18)
-      .sort({ "apiData.members": -1 });
-
-    return res.json(foundAnimes);
-  } catch (e) {
-    console.error(e.message);
-    return res.status(500).json({ message: "internal server error" });
-  }
-});
-
-router.get("/topAnime", verifyApiKey, async (req, res) => {
-  try {
-    let foundAnimes = await Anime.find(
-      {
-        $or: [
-          { "apiData.type": "Movie" },
-          { "apiData.type": "TV" },
-          { "apiData.type": "OVA" },
-          { "apiData.type": "Special" },
-        ],
-      },
-      {
-        "apiData.images.webp.large_image_url": 1,
-        "apiData.title": 1,
-        "apiData.score": 1,
-        "apiData.aired.prop.from.year": 1,
-
-        "apiData.genres.name": 1,
-      }
-    )
-      .limit(18)
-      .sort({ "apiData.score": -1 });
-
-    return res.json(foundAnimes);
-  } catch (e) {
-    console.error(e.message);
-    return res.status(500).json({ message: "internal server error" });
-  }
-});
-
-//type
-router.get("/movie", verifyApiKey, async (req, res) => {
-  const nextSeasonYear = getNextSeasonAndYear();
-  const year = nextSeasonYear[0].year;
-  const season = nextSeasonYear[0].season;
-  try {
-    let foundAnimes = await Anime.find(
-      { "apiData.type": "Movie" },
-      {
-        "apiData.images.webp.large_image_url": 1,
-        "apiData.title": 1,
-        "apiData.score": 1,
-        "apiData.aired.prop.from.year": 1,
-
-        "apiData.genres.name": 1,
-      }
-    )
-      .limit(18)
-      .sort({ "apiData.members": -1 });
-
-    return res.json(foundAnimes);
-  } catch (e) {
-    console.error(e.message);
-    return res.status(500).json({ message: "internal server error" });
-  }
-});
-
-router.get("/music", verifyApiKey, async (req, res) => {
-  const nextSeasonYear = getNextSeasonAndYear();
-  const year = nextSeasonYear[0].year;
-  const season = nextSeasonYear[0].season;
-  try {
-    let foundAnimes = await Anime.find(
-      { "apiData.type": "Music" },
-      {
-        "apiData.images.webp.large_image_url": 1,
-        "apiData.title": 1,
-        "apiData.score": 1,
-        "apiData.aired.prop.from.year": 1,
-
-        "apiData.genres.name": 1,
-      }
-    )
-      .limit(18)
-      .sort({ "apiData.members": -1 });
-
-    return res.json(foundAnimes);
-  } catch (e) {
-    console.error(e.message);
-    return res.status(500).json({ message: "internal server error" });
-  }
-});
-
-//genres
-router.get("/genres/:genre", verifyApiKey, async (req, res) => {
-  const genre = req.params.genre;
-  try {
-    let foundAnimes = await Anime.find(
-      {
-        $and: [
-          { "apiData.genres.name": genre },
-
-          {
-            $or: [
-              { "apiData.type": "Movie" },
-              { "apiData.type": "TV" },
-              { "apiData.type": "OVA" },
-              { "apiData.type": "Special" },
-            ],
-          },
-        ],
-      },
-      {
-        "apiData.images.webp": 1,
-        "apiData.title": 1,
-        "apiData.score": 1,
-        "apiData.aired.prop.from.year": 1,
-
-        "apiData.genres.name": 1,
-      }
-    )
-      .limit(18)
-      .sort({ "apiData.members": -1 });
-
-    return res.json(foundAnimes);
-  } catch (e) {
-    console.error(e.message);
-    return res.status(500).json({ message: "internal server error" });
-  }
-});
-
-//directors
-router.get("/directors/:director", verifyApiKey, async (req, res) => {
-  const director = req.params.director;
-  try {
-    let foundAnimes = await Anime.find(
-      {
-        "apiData.staff": {
-          $elemMatch: {
-            "person.name": director,
-            positions: "Director",
-          },
+    }
+    if (type) {
+      query["apiData.type"] = type;
+    }
+    if (genre) {
+      query["apiData.genres.name"] = genre;
+    }
+    if (director) {
+      query["apiData.staff"] = {
+        $elemMatch: {
+          "person.name": director,
+          positions: "Director",
         },
-        "apiData.type": { $in: ["Movie", "TV", "OVA", "Special"] },
-      },
-      {
-        "apiData.images.webp.large_image_url": 1,
-        "apiData.title": 1,
-        "apiData.score": 1,
-        "apiData.aired.prop.from.year": 1,
-
-        "apiData.genres.name": 1,
+      };
+    }
+    if (year) {
+      if (Array.isArray(year)) {
+        query["apiData.aired.prop.from.year"] = year.map((y) => Number(y));
+      } else {
+        query["apiData.aired.prop.from.year"] = Number(year);
       }
-    )
-      .limit(18)
-      .sort({ "apiData.members": -1 });
+    }
 
-    return res.json(foundAnimes);
+    const seasonMonth = { winter: 1, spring: 4, summer: 7, fall: 10 };
+    if (season) {
+      if (query["apiData.season"] !== null) {
+        query["apiData.season"] = season;
+      } else {
+        query["apiData.aired.prop.from.month"] = seasonMonth[season];
+      }
+    }
+
+    if (status) {
+      query["apiData.status"] = status;
+    }
+    if (rating) {
+      query["apiData.rating"] = rating;
+    }
+
+    // 构建排序条件
+    let sortCriteria = {};
+    switch (sortBy) {
+      case "members":
+        sortCriteria["apiData.members"] = -1;
+        break;
+      case "score":
+        sortCriteria["apiData.score"] = -1;
+        break;
+      case "favorites":
+        sortCriteria["apiData.favorites"] = -1;
+      default:
+        break;
+    }
+
+    // 执行查询
+
+    if (select) {
+      s = "";
+    } else {
+      s =
+        "apiData.images.webp.large_image_url apiData.title apiData.score apiData.aired.prop.from.year apiData.genres.name mal_id apiData.trailer.images.medium_image_url";
+    }
+
+    let foundAnimes = await Anime.find(query)
+      .skip(skip)
+      .limit(limit)
+      .sort(sortCriteria)
+      .select(s);
+
+    res.json(foundAnimes);
   } catch (e) {
     console.error(e.message);
-    return res.status(500).json({ message: "internal server error" });
+    res.status(500).json({ message: "internal server error" });
   }
 });
+
+router.get("/search", verifyApiKey, async (req, res) => {
+  const { query, limit, page = 1 } = req.query;
+  const skip = (page - 1) * limit;
+  // 可以使用正则表达式来实现模糊匹配
+  let searchCriteria = {
+    "apiData.titles": {
+      $elemMatch: {
+        title: { $regex: query, $options: "i" },
+      },
+    },
+  };
+
+  try {
+    let foundAnimes = await Anime.find(searchCriteria)
+      .skip(skip)
+      .sort({ "apiData.popularity": 1 }) // 根据相关度排序
+      .limit(parseInt(limit) || 10); // Adjust this to select the required fields
+    // Optionally, process the results to format them as desired
+    let formattedResults = foundAnimes.map((anime) => ({
+      mal_id: anime.mal_id,
+      apiData: anime.apiData,
+      matchedTitles: anime.apiData.titles.filter((titleObj) =>
+        titleObj.title.match(new RegExp(query, "i"))
+      ),
+    }));
+
+    res.json(formattedResults);
+  } catch (e) {
+    console.error(e.message);
+    res.status(500).json({ message: "internal server error" });
+  }
+});
+
 //calendar
 router.get("/calendar", verifyApiKey, async (req, res) => {
   const seasonYear = getLastSeasonAndYear();
@@ -304,6 +176,7 @@ router.get("/calendar", verifyApiKey, async (req, res) => {
         "apiData.aired.prop.from.year": 1,
         "apiData.broadcast.time": 1,
         "apiData.genres.name": 1,
+        mal_id: 1,
       }
     ).sort({ "apiData.status": 1, "apiData.broadcast.time": 1 });
 
@@ -315,13 +188,10 @@ router.get("/calendar", verifyApiKey, async (req, res) => {
 });
 
 router.get("/test", verifyApiKey, async (req, res) => {
-  const week = req.query.week;
   const seasonYear = getLastSeasonAndYear();
-  const year = seasonYear[0].year;
-  const season = seasonYear[0].season;
 
   try {
-    let foundAnimes = await Anime.find({}).limit(2);
+    let foundAnimes = await Anime.find({ mal_id: 1 });
 
     return res.json(foundAnimes);
   } catch (e) {

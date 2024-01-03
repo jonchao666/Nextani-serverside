@@ -12,7 +12,7 @@ const limiter = new Bottleneck({
   // 这里不需要 highWaterMark 和 strategy，因为我们不在乎队列的长度
 });
 
-const getJikan = async (page = 1, retries = 3) => {
+const getJikan = async (page = 1, retries = Infinity) => {
   try {
     return await limiter.schedule(async () => {
       let result = await axios({
@@ -40,35 +40,35 @@ const getJikan = async (page = 1, retries = 3) => {
   }
 };
 
-const getAnimeCharacters = async (mal_id, retries = 3) => {
-  try {
-    return await limiter.schedule(async () => {
-      const result = await axios.get(
-        `https://api.jikan.moe/v4/anime/${mal_id}/characters`,
-        { timeout: 10000 } // 10秒超时
-      );
-      return result.data.data;
-    });
-  } catch (error) {
-    if (error.code === "ECONNABORTED") {
-      console.log(
-        `Request timed out for characters of mal_id ${mal_id}. Retrying...`
-      );
-      return getAnimeCharacters(mal_id, retries - 1);
-    } else if (error.response && error.response.status === 429 && retries > 0) {
-      console.log("Rate limited. Retrying in 10 seconds...");
-      await sleep(10000);
-      return getAnimeCharacters(mal_id, retries - 1);
-    } else {
-      console.error(
-        `Error fetching characters for mal_id ${mal_id}: ${error.message}`
-      );
-      return null;
-    }
-  }
-};
+// const getAnimeCharacters = async (mal_id, retries = Infinity) => {
+//   try {
+//     return await limiter.schedule(async () => {
+//       const result = await axios.get(
+//         `https://api.jikan.moe/v4/anime/${mal_id}/characters`,
+//         { timeout: 10000 } // 10秒超时
+//       );
+//       return result.data.data;
+//     });
+//   } catch (error) {
+//     if (error.code === "ECONNABORTED") {
+//       console.log(
+//         `Request timed out for characters of mal_id ${mal_id}. Retrying...`
+//       );
+//       return getAnimeCharacters(mal_id, retries - 1);
+//     } else if (error.response && error.response.status === 429 && retries > 0) {
+//       console.log("Rate limited. Retrying in 10 seconds...");
+//       await sleep(10000);
+//       return getAnimeCharacters(mal_id, retries - 1);
+//     } else {
+//       console.error(
+//         `Error fetching characters for mal_id ${mal_id}: ${error.message}`
+//       );
+//       return null;
+//     }
+//   }
+// };
 
-const getAnimeStaff = async (mal_id, retries = 3) => {
+const getAnimeStaff = async (mal_id, retries = Infinity) => {
   try {
     return await limiter.schedule(async () => {
       const result = await axios.get(
@@ -110,7 +110,7 @@ const saveAnimeToDb = async (animeData) => {
 };
 
 const getAllAnime = async () => {
-  let page = 189;
+  let page = 1;
   const maxRetries = Infinity; // 设置最大重试次数
 
   while (true) {
@@ -126,13 +126,13 @@ const getAllAnime = async () => {
       let retries = 0;
       while (retries < maxRetries) {
         try {
-          console.log(`Fetching characters and staff for ${anime.title}...`);
-          const characters = await getAnimeCharacters(anime.mal_id);
+          console.log(`Fetching  staff for ${anime.title}...`);
+          // const characters = await getAnimeCharacters(anime.mal_id);
           const staff = await getAnimeStaff(anime.mal_id);
 
           const completeAnimeData = {
             ...anime,
-            characters: characters || [],
+            // characters: characters || [],
             staff: staff || [],
           };
           await saveAnimeToDb(completeAnimeData);

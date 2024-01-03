@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const getAllAnime = require("../apiget/jikanCharAndStaff");
+const getAllAnime = require("../apiget/jikanStaff");
 require("dotenv").config();
 
 router.post("/update-anime", async (req, res) => {
