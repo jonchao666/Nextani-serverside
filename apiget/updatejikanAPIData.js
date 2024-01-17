@@ -39,10 +39,7 @@ const getJikan = async (page = 1, retries = 3) => {
 const saveAnimeToDb = async (animeData) => {
   const updateData = {};
   Object.keys(animeData).forEach((key) => {
-    if (key !== "characters" && key !== "staff" && key !== "recommendations") {
-      // 排除不想更新的字段
-      updateData[`apiData.${key}`] = animeData[key];
-    }
+    updateData[`apiData.${key}`] = animeData[key];
   });
 
   try {

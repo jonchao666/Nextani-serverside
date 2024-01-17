@@ -6,7 +6,6 @@ const {
   getLastSeasonAndYear,
 } = require("../helpers/getSeasonAndYear");
 const verifyApiKey = require("../validation");
-const { calculateScore } = require("../helpers/animeRecommendation");
 
 router.get("/", verifyApiKey, async (req, res) => {
   try {
