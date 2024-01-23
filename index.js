@@ -5,10 +5,11 @@ const app = express();
 const mongoose = require("mongoose");
 const authenticateToken = require("./middleware/authenticateToken");
 const cors = require("cors");
-
-const updatejikanAPIData = require("./apiget/updatejikanAPIData");
 const passport = require("passport");
 require("./config/passport");
+const updatejikanAPIAnimeData = require("./apiget/updatejikanAPIAnimeData.js");
+const updatejikanAPIPeopleData = require("./apiget/updatejikanAPIPeopleData.js");
+
 app.listen(8080, () => {
   console.log("Server is running on port 8080");
 });
@@ -42,11 +43,14 @@ app.use(cors());
 app.use(compression());
 app.use("/user", authenticateToken);
 app.use("/upload", authenticateToken);
+app.use("/userActivity", authenticateToken);
 app.use("/profilePicture", express.static("uploads/profilePicture"));
 
 app.use("/auth", require("./routes/auth"));
 app.use("/anime", require("./routes/anime"));
 app.use("/user", require("./routes/user"));
+app.use("/userActivity", require("./routes/userActivity"));
+
 app.use("/upload", require("./routes/upload.js"));
 app.use("/external-timing", require("./routes/externalTiming"));
 
@@ -54,4 +58,5 @@ app.get("/", (req, res) => {
   res.send("Hello World");
 });
 
-updatejikanAPIData();
+//updatejikanAPIAnimeData();
+//updatejikanAPIPeopleData();

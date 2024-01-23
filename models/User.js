@@ -50,8 +50,39 @@ const userSchema = new mongoose.Schema({
     ], // 简单的邮箱格式验证
   },
   updateEmailToken: String,
+  deleteAccountToken: String,
   displayName: String,
   profilePicture: String,
+  likedPerson: [Number],
+
+  likedAnime: [Number],
+
+  watchlist: {
+    type: [
+      {
+        name: {
+          type: String,
+          required: true,
+        },
+        description: String,
+        items: [Number],
+      },
+    ],
+    default: [{ name: "Default", description: "", items: [] }], // default
+  },
+
+  history: [
+    {
+      mal_id: {
+        type: Number,
+        required: true,
+      },
+      visitedOn: {
+        type: Date,
+        default: Date.now,
+      },
+    },
+  ],
   createdAt: {
     type: Date,
     default: Date.now,

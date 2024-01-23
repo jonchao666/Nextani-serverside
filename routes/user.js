@@ -69,8 +69,8 @@ router.post("/updateDisplayName", async (req, res) => {
   }
 });
 
-//verifyEmail
-const sendVerificationEmail = require("../helpers/sendVerificationEmail");
+//verifyEmail change
+const sendVerificationEmailForEmailChange = require("../helpers/sendVerificationEmailForEmailChange");
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 router.post("/verifyEmail", async (req, res) => {
@@ -96,7 +96,7 @@ router.post("/verifyEmail", async (req, res) => {
       return res.status(400).send("Email already in use");
     }
 
-    sendVerificationEmail(email, req.user.id);
+    sendVerificationEmailForEmailChange(email, req.user.id);
 
     res.json({
       message:
@@ -161,11 +161,18 @@ router.post("/checkEmailUpdated", async (req, res) => {
 });
 
 //delete account
-router.get("/deleteAccount", async (req, res) => {
+router.post("/deleteAccount", async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
+
     if (!user) {
       return res.status(404).send("User not found");
+    }
+
+    const { token } = req.body;
+
+    if (user.deleteAccountToken !== token) {
+      return res.status(400).send("error verification");
     }
 
     await User.findByIdAndRemove(req.user.id);
@@ -173,6 +180,43 @@ router.get("/deleteAccount", async (req, res) => {
     res.json({ message: "Account deleted successfully" });
   } catch (error) {
     res.status(500).send("Server error: " + error.message);
+  }
+});
+
+//verifyAccountDelete
+const sendVerificationEmailForAccountDelete = require("../helpers/sendVerificationEmailForAccountDelete");
+
+router.get("/verifyDeleteAccount", async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).send("User not found");
+    }
+
+    sendVerificationEmailForAccountDelete(req.user.id);
+
+    res.json({
+      message:
+        "Verification email sent successfully. Please check your email to confirm the update.",
+    });
+  } catch (error) {
+    res.status(500).send("Server error");
+  }
+});
+
+router.get("/checkAccountDeleted", async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      res.json({ accountDeleted: true });
+    } else {
+      res.json({ accountDeleted: false });
+    }
+  } catch (error) {
+    console.error("Server error", error);
+    res.status(500).send("Server error");
   }
 });
 

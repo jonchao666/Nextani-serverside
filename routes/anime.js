@@ -95,7 +95,7 @@ router.get("/", verifyApiKey, async (req, res) => {
       s = "";
     } else {
       s =
-        "apiData.images.webp.large_image_url apiData.title apiData.score apiData.aired.prop.from.year apiData.genres.name mal_id apiData.trailer.images.medium_image_url";
+        "apiData.images.webp.large_image_url apiData.title apiData.type apiData.score apiData.aired.prop.from.year apiData.genres.name mal_id ";
     }
 
     let foundAnimes = await Anime.find(query)

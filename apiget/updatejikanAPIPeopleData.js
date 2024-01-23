@@ -1,22 +1,21 @@
 const axios = require("axios");
-const Anime = require("../models/Anime");
+const People = require("../models/People");
 const Bottleneck = require("bottleneck");
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const limiter = new Bottleneck({
-  maxConcurrent: 3, // 每秒最多 3 个并发请求
-  minTime: 333, // 每 333 毫秒一个请求，确保每秒不超过 3 个请求
-  reservoir: 60, // 每分钟最多 60 个请求
+  maxConcurrent: 3,
+  minTime: 333,
+  reservoir: 60,
   reservoirRefreshAmount: 60,
-  reservoirRefreshInterval: 60 * 1000, // 每分钟刷新一次
-  // 这里不需要 highWaterMark 和 strategy，因为我们不在乎队列的长度
+  reservoirRefreshInterval: 60 * 1000,
 });
 
 const getJikan = async (page = 1, retries = 3) => {
   try {
     return await limiter.schedule(async () => {
       let result = await axios({
-        url: `https://api.jikan.moe/v4/anime?limit=25&page=${page}`,
+        url: `https://api.jikan.moe/v4/people?limit=25&page=${page}`,
         method: "GET",
       });
       return result.data.data;
@@ -36,25 +35,25 @@ const getJikan = async (page = 1, retries = 3) => {
   }
 };
 
-const saveAnimeToDb = async (animeData) => {
+const savePeopleToDb = async (peopleData) => {
   const updateData = {};
-  Object.keys(animeData).forEach((key) => {
-    updateData[`apiData.${key}`] = animeData[key];
+  Object.keys(peopleData).forEach((key) => {
+    updateData[`apiData.${key}`] = peopleData[key];
   });
 
   try {
-    await Anime.updateOne(
-      { mal_id: animeData.mal_id },
+    await People.updateOne(
+      { mal_id: peopleData.mal_id },
       { $set: updateData },
       { upsert: true }
     );
-    console.log(`Saved or updated anime ${animeData.title} in database.`);
+    console.log(`Saved or updated people ${peopleData.name} in database.`);
   } catch (error) {
-    console.error("Error saving or updating anime in database:", error);
+    console.error("Error saving or updating people in database:", error);
   }
 };
 
-const updatejikanAPIData = async () => {
+const updatejikanAPIPeopleData = async () => {
   let page = 1;
   const maxRetries = Infinity; // 设置最大重试次数
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -65,16 +64,16 @@ const updatejikanAPIData = async () => {
 
     while (retries < maxRetries) {
       try {
-        const animePage = await getJikan(page);
+        const peoplePage = await getJikan(page);
 
-        if (animePage.length === 0) {
-          console.log("No more anime to fetch. Ending function.");
+        if (peoplePage.length === 0) {
+          console.log("No more people to fetch. Ending function.");
           return; // 没有更多的数据时退出整个函数
         }
 
-        for (const anime of animePage) {
-          console.log(`Saving anime ${anime.title} to database...`);
-          await saveAnimeToDb(anime);
+        for (const people of peoplePage) {
+          console.log(`Saving people ${people.name} to database...`);
+          await savePeopleToDb(people);
         }
 
         page++; // 成功获取数据，递增页面号并跳出重试循环
@@ -93,4 +92,4 @@ const updatejikanAPIData = async () => {
   }
 };
 
-module.exports = updatejikanAPIData;
+module.exports = updatejikanAPIPeopleData;

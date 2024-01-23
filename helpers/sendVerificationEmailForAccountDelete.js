@@ -1,15 +1,15 @@
 const nodemailer = require("nodemailer");
 const User = require("../models/User");
 const crypto = require("crypto");
-const sendVerificationEmail = async (newEmail, userId) => {
+const sendVerificationEmailForAccountDelete = async (userId) => {
   const user = await User.findById(userId);
   const token = crypto.randomBytes(48).toString("hex");
   if (!user) {
     throw new Error("User not found");
   }
 
-  user.updateEmailToken = token;
-
+  user.deleteAccountToken = token;
+  let email = user.email || user.google.email;
   await user.save();
 
   let transporter = nodemailer.createTransport({
@@ -26,10 +26,10 @@ const sendVerificationEmail = async (newEmail, userId) => {
   // 邮件内容配置
   let mailOptions = {
     from: process.env.EMAIL_USERNAME, // 发送者邮箱
-    to: newEmail, // 接收者邮箱，即用户的新邮箱地址
-    subject: "NextAni Email Change Verification", // 邮件主题
-    html: `<p>Hello,<br/> We have received a request to change your NextAni account email address.<br/>To complete the email change process, please click the link below:</p>
-    <a href="${process.env.SITE_URL}/email-changed?email=${newEmail}&token=${token}">${process.env.SITE_URL}/email-changed?email=${newEmail}&token=${token}</a>`, // HTML邮件内容
+    to: email, // 接收者邮箱，即用户的新邮箱地址
+    subject: "NextAni User Account Deletation Confirmation", // 邮件主题
+    html: `<p>Hello,<br/> We have received a request to delete your Vercel account and all of its associated data.<br/>To complete the deletion your account, please click the link below:</p>
+    <a href="${process.env.SITE_URL}/account-deleted?&token=${token}">${process.env.SITE_URL}/account-deleted?&token=${token}</a>`, // HTML邮件内容
   };
 
   // 发送邮件
@@ -40,4 +40,4 @@ const sendVerificationEmail = async (newEmail, userId) => {
     console.error("Error sending email: " + error);
   }
 };
-module.exports = sendVerificationEmail;
+module.exports = sendVerificationEmailForAccountDelete;
