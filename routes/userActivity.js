@@ -2,9 +2,12 @@ const express = require("express");
 const Anime = require("../models/Anime");
 const router = express.Router();
 const User = require("../models/User");
-
+const People = require("../models/People");
+const xss = require("xss");
 module.exports = router;
 
+const select =
+  "apiData.images.webp.large_image_url apiData.title apiData.type apiData.score apiData.aired.prop.from.year apiData.genres.name mal_id apiData.synopsis";
 //likedAnime
 router.get("/likedAnime", async (req, res) => {
   try {
@@ -15,12 +18,24 @@ router.get("/likedAnime", async (req, res) => {
 
     // Extract page and limit from query parameters
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 6; // Default limit
+    const limit = parseInt(req.query.limit) || 8; // Default limit
     const skip = (page - 1) * limit;
 
-    const likedAnimes = await Anime.find({ mal_id: { $in: user.likedAnime } })
-      .skip(skip)
-      .limit(limit);
+    // Slice the user's likedAnime list for pagination
+    const paginatedLikedAnimeIds = user.likedAnime.slice(skip, skip + limit);
+
+    // Find the Anime documents for the paginated IDs
+    const likedAnimes = await Anime.find({
+      mal_id: { $in: paginatedLikedAnimeIds },
+    }).select(select);
+
+    // Sort the results according to the order of IDs in paginatedLikedAnimeIds
+    likedAnimes.sort((a, b) => {
+      const aIndex = paginatedLikedAnimeIds.indexOf(a.mal_id);
+      const bIndex = paginatedLikedAnimeIds.indexOf(b.mal_id);
+      return aIndex - bIndex;
+    });
+
     res.json(likedAnimes);
   } catch (error) {
     console.error("Server error", error);
@@ -37,7 +52,9 @@ router.get("/ifAnimeLiked/:mal_id", async (req, res) => {
     }
 
     const { mal_id } = req.params;
-    const isLiked = user.likedAnime.includes(parseInt(mal_id));
+
+    const isLiked = user.likedAnime.includes(Number(mal_id));
+
     res.json({ isLiked });
   } catch (error) {
     console.error("Server error", error);
@@ -52,13 +69,14 @@ router.post("/likedAnimeAdd", async (req, res) => {
       return res.status(404).send("User not found");
     }
     const { mal_id } = req.body;
+
     if (!mal_id) {
       return res.status(400).send("mal_id is required");
     }
 
-    user.likedAnime.push(mal_id);
+    user.likedAnime.unshift(Number(mal_id));
     await user.save();
-    res.json({ message: "Added to favorite." });
+    res.json({ message: "Saved to favorite anime." });
   } catch (error) {
     console.error("Server error", error);
     res.status(500).send("Server error");
@@ -72,6 +90,7 @@ router.delete("/likedAnime/:mal_id", async (req, res) => {
       return res.status(404).send("User not found");
     }
     const { mal_id } = req.params;
+
     if (!mal_id) {
       return res.status(400).send("mal_id is required");
     }
@@ -79,14 +98,13 @@ router.delete("/likedAnime/:mal_id", async (req, res) => {
     user.likedAnime = user.likedAnime.filter((id) => id !== Number(mal_id));
 
     await user.save();
-    res.json({ message: "Deleted from favorite." });
+    res.json({ message: "Deleted from favorite anime." });
   } catch (error) {
     console.error("Server error", error);
     res.status(500).send("Server error");
   }
 });
 
-//likedPerson
 router.get("/likedPerson", async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
@@ -94,15 +112,43 @@ router.get("/likedPerson", async (req, res) => {
       return res.status(404).send("User not found");
     }
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 6; // Default limit
+    const limit = parseInt(req.query.limit) || 8; // Default limit
     const skip = (page - 1) * limit;
 
+    // Slice the user's likedPerson list for pagination
+    const paginatedLikedPersonIds = user.likedPerson.slice(skip, skip + limit);
+
+    // Find the People documents for the paginated IDs
     const likedPeople = await People.find({
-      mal_id: { $in: user.likedPerson },
-    })
-      .skip(skip)
-      .limit(limit);
+      mal_id: { $in: paginatedLikedPersonIds },
+    });
+
+    // Sort the results according to the order of IDs in paginatedLikedPersonIds
+    likedPeople.sort((a, b) => {
+      const aIndex = paginatedLikedPersonIds.indexOf(a.mal_id);
+      const bIndex = paginatedLikedPersonIds.indexOf(b.mal_id);
+      return aIndex - bIndex;
+    });
+
     res.json(likedPeople);
+  } catch (error) {
+    console.error("Server error", error);
+    res.status(500).send("Server error");
+  }
+});
+
+//confirm if person liked
+router.get("/ifPersonLiked/:mal_id", async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).send("User not found");
+    }
+
+    const { mal_id } = req.params;
+
+    const isLiked = user.likedPerson.includes(Number(mal_id));
+    res.json({ isLiked });
   } catch (error) {
     console.error("Server error", error);
     res.status(500).send("Server error");
@@ -116,13 +162,14 @@ router.post("/likedPersonAdd", async (req, res) => {
       return res.status(404).send("User not found");
     }
     const { mal_id } = req.body;
+
     if (!mal_id) {
       return res.status(400).send("mal_id is required");
     }
 
-    user.likedPerson.push(mal_id);
+    user.likedPerson.unshift(Number(mal_id));
     await user.save();
-    res.json({ message: "likedPerson added" });
+    res.json({ message: "Saved to favotite Person" });
   } catch (error) {
     console.error("Server error", error);
     res.status(500).send("Server error");
@@ -136,6 +183,7 @@ router.delete("/likedPerson/:mal_id", async (req, res) => {
       return res.status(404).send("User not found");
     }
     const { mal_id } = req.params;
+
     if (!mal_id) {
       return res.status(400).send("mal_id is required");
     }
@@ -143,7 +191,7 @@ router.delete("/likedPerson/:mal_id", async (req, res) => {
     user.likedPerson = user.likedPerson.filter((id) => id !== Number(mal_id));
 
     await user.save();
-    res.json({ message: "likedPerson deleted" });
+    res.json({ message: "Deleted from favorite person" });
   } catch (error) {
     console.error("Server error", error);
     res.status(500).send("Server error");
@@ -159,7 +207,7 @@ router.get("/history", async (req, res) => {
     }
 
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 6; // Default limit
+    const limit = parseInt(req.query.limit) || 14; // Default limit
     const skip = (page - 1) * limit;
 
     // Paginate the user's history
@@ -167,7 +215,9 @@ router.get("/history", async (req, res) => {
     const mal_ids = paginatedHistory.map((item) => item.mal_id);
 
     // Fetch the corresponding Anime documents in one query
-    const animeDocuments = await Anime.find({ mal_id: { $in: mal_ids } });
+    const animeDocuments = await Anime.find({
+      mal_id: { $in: mal_ids },
+    }).select(select);
 
     // Merge history with Anime details
     const historyWithDetails = paginatedHistory.map((historyItem) => {
@@ -179,7 +229,7 @@ router.get("/history", async (req, res) => {
         animeDetail,
       };
     });
-
+    console.log(historyWithDetails);
     res.json(historyWithDetails);
   } catch (error) {
     console.error("Server error", error);
@@ -190,22 +240,32 @@ router.get("/history", async (req, res) => {
 router.post("/historyAdd", async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
+
     if (!user) {
       return res.status(404).send("User not found");
     }
     const { mal_id } = req.body;
+
     if (!mal_id) {
       return res.status(400).send("mal_id is required");
     }
 
+    // Remove the existing entry if it exists
+    user.history = user.history.filter(
+      (entry) => entry.mal_id !== Number(mal_id)
+    );
+
+    // Create a new history entry
     const newHistoryEntry = {
-      mal_id: mal_id,
+      mal_id: Number(mal_id),
       visitedOn: new Date(),
     };
 
-    user.history.push(newHistoryEntry);
+    // Add the new entry to the beginning of the history array
+    user.history.unshift(newHistoryEntry);
+
     await user.save();
-    res.json({ message: "History added" });
+    res.json({ message: "History updated" });
   } catch (error) {
     console.error("Server error", error);
     res.status(500).send("Server error");
@@ -219,6 +279,7 @@ router.delete("/history/:mal_id", async (req, res) => {
       return res.status(404).send("User not found");
     }
     const { mal_id } = req.params;
+
     if (!mal_id) {
       return res.status(400).send("mal_id is required");
     }
@@ -228,7 +289,26 @@ router.delete("/history/:mal_id", async (req, res) => {
     );
 
     await user.save();
-    res.json({ message: "History deleted" });
+    res.json({ message: "All views of this anime removed from history" });
+  } catch (error) {
+    console.error("Server error", error);
+    res.status(500).send("Server error");
+  }
+});
+
+//delete all history
+router.delete("/history", async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).send("User not found");
+    }
+
+    // 清空历史记录
+    user.history = [];
+    await user.save();
+
+    res.json({ message: "History cleared successfully" });
   } catch (error) {
     console.error("Server error", error);
     res.status(500).send("Server error");
@@ -244,8 +324,9 @@ router.get("/watchlist/:name", async (req, res) => {
     }
 
     const { name } = req.params;
+
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 6; // Default limit
+    const limit = parseInt(req.query.limit) || 14; // Default limit
     const skip = (page - 1) * limit;
 
     let watchlists = [];
@@ -260,6 +341,12 @@ router.get("/watchlist/:name", async (req, res) => {
 
     const detailedItems = await Anime.find({
       mal_id: { $in: paginatedItems },
+    }).select(select);
+    detailedItems.sort((a, b) => {
+      // 根据 paginatedItems 中的顺序来排序
+      const aIndex = paginatedItems.indexOf(a.mal_id);
+      const bIndex = paginatedItems.indexOf(b.mal_id);
+      return aIndex - bIndex;
     });
 
     watchlists = [
@@ -284,35 +371,50 @@ router.get("/watchlists/", async (req, res) => {
       return res.status(404).send("User not found");
     }
 
-    let paginatedWatchlists = [];
-    if (parseInt(req.query.limit) === 0) {
-      // If limit is 0, return all watchlists without pagination
-      paginatedWatchlists = user.watchlist;
-    } else {
-      const page = parseInt(req.query.page) || 1;
-      let limit = parseInt(req.query.limit) || 6; // Default limit is 6
-      const skip = (page - 1) * limit;
+    const page = parseInt(req.query.page) || 1;
+    let limit = parseInt(req.query.limit) || 14;
+    const skip = (page - 1) * limit;
 
-      // Get watchlists with pagination
-      paginatedWatchlists = user.watchlist.slice(skip, skip + limit);
+    const paginatedWatchlists = user.watchlist.slice(skip, skip + limit);
+
+    let mal_ids = [];
+    paginatedWatchlists.forEach((item) => {
+      mal_ids.push(...item.items.slice(0, 2));
+    });
+
+    const animeDocuments = await Anime.find({
+      mal_id: { $in: mal_ids },
+    }).select(select);
+
+    const watchlistWithDetails = paginatedWatchlists.map((watchlistItem) => {
+      const animeDetails = watchlistItem.items
+        .slice(0, 2)
+        .map((mal_id) => {
+          return animeDocuments.find((anime) => anime.mal_id === mal_id);
+        })
+        .filter((anime) => anime);
+      return {
+        ...watchlistItem.toObject(),
+        animeDetails,
+      };
+    });
+
+    res.json(watchlistWithDetails);
+  } catch (error) {
+    console.error("Server error", error);
+    res.status(500).send("Server error");
+  }
+});
+
+//watchlists without animedetails
+router.get("/watchlistsWithoutAnimeDetails/", async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).send("User not found");
     }
 
-    const watchlists = await Promise.all(
-      paginatedWatchlists.map(async (watchlist) => {
-        let detailedItem = null;
-        if (watchlist.items.length > 0) {
-          // Only get the details of the first item
-          detailedItem = await Anime.findOne({ mal_id: watchlist.items[0] });
-        }
-        return {
-          ...watchlist.toObject(),
-          items: detailedItem ? [detailedItem] : [], // Put the single object in an array
-          // If you want the items field to always be an array, even if it has only one element
-        };
-      })
-    );
-
-    res.json(watchlists);
+    res.json(user.watchlist);
   } catch (error) {
     console.error("Server error", error);
     res.status(500).send("Server error");
@@ -328,8 +430,9 @@ router.get("/animeInWatchlists/:mal_id", async (req, res) => {
     }
 
     const { mal_id } = req.params;
+
     const watchlistsContainingAnime = user.watchlist.filter((watchlist) =>
-      watchlist.items.includes(parseInt(mal_id))
+      watchlist.items.includes(Number(mal_id))
     );
 
     res.json(watchlistsContainingAnime);
@@ -348,7 +451,7 @@ router.post("/watchlist/create", async (req, res) => {
 
     let { name, mal_id, description } = req.body;
 
-    name = name.trim();
+    name = xss(name.trim());
 
     if (name.length < 1 || name.length > 150) {
       return res
@@ -356,7 +459,11 @@ router.post("/watchlist/create", async (req, res) => {
         .send("The name must be between 1 and 150 characters long.");
     }
 
-    if (!/^[\w\s,.!?;:'"@#$%^&*()_+=-]*$/.test(name)) {
+    if (
+      !/^[\w\s,.!?;:'"@#$%^&*()+=_\u4e00-\u9fff\u3040-\u309F\u30A0-\u30FF\u0400-\u04FF\u0590-\u05FF\u0600-\u06FF-]*$/.test(
+        name
+      )
+    ) {
       return res.status(400).send("The name contains invalid characters.");
     }
 
@@ -366,7 +473,6 @@ router.post("/watchlist/create", async (req, res) => {
       return res.status(400).send("A list with the same name already exists.");
     }
 
-    // Limit the number of watchlist
     const MAX_WATCHLIST_COUNT = 5000;
     if (user.watchlist.length >= MAX_WATCHLIST_COUNT) {
       return res
@@ -374,16 +480,19 @@ router.post("/watchlist/create", async (req, res) => {
         .send(`You can only create up to ${MAX_WATCHLIST_COUNT} watchlists.`);
     }
 
+    description = description ? xss(description) : "";
+
     const newWatchlistEntry = {
-      name: name,
-      description: description ? description : "",
-      items: mal_id ? [mal_id] : [],
+      name,
+      description,
+      items: mal_id ? [Number(mal_id)] : [],
     };
 
-    user.watchlist.push(newWatchlistEntry);
+    user.watchlist.splice(1, 0, newWatchlistEntry);
+
     await user.save();
 
-    res.json({ message: "List creaded successfully." });
+    res.json({ message: "List created successfully." });
   } catch (error) {
     console.error("Server error", error);
     res.status(500).send("Server error");
@@ -422,6 +531,7 @@ router.post("/watchlist/:name/addItem", async (req, res) => {
     }
     const { name } = req.params;
     const { mal_id } = req.body;
+
     if (!mal_id) {
       return res.status(400).send("mal_id is required");
     }
@@ -445,15 +555,15 @@ router.post("/watchlist/:name/addItem", async (req, res) => {
         );
     }
 
-    if (watchlist.items.includes(mal_id)) {
+    if (watchlist.items.includes(Number(mal_id))) {
       return res.status(400).send("Anime already in watchlist");
     }
 
-    watchlist.items.push(mal_id);
+    watchlist.items.unshift(Number(mal_id));
 
     await user.save();
 
-    res.json({ message: `Added to ${name}` });
+    res.json({ message: `Saved to ${name}` });
   } catch (error) {
     console.error("Server error", error);
     res.status(500).send("Server error");
@@ -500,6 +610,7 @@ router.patch("/watchlist/rename/:oldName", async (req, res) => {
 
     const { oldName } = req.params;
     const { newName } = req.body;
+    const cleanedNewName = xss(newName.trim());
     if (!oldName || !newName) {
       return res.status(400).send("Both old name and new name are required");
     }
@@ -515,7 +626,7 @@ router.patch("/watchlist/rename/:oldName", async (req, res) => {
         .send("Another watchlist with the new name already exists");
     }
 
-    watchlist.name = newName;
+    watchlist.name = cleanedNewName;
     await user.save();
 
     res.json({ message: "Name changed successfully" });
@@ -534,6 +645,7 @@ router.patch("/watchlist/updateDescription/:name", async (req, res) => {
 
     const { name } = req.params;
     const { description } = req.body;
+    const cleanedDescription = xss(description);
     if (!name) {
       return res.status(400).send("Watchlist name is required");
     }
@@ -546,7 +658,7 @@ router.patch("/watchlist/updateDescription/:name", async (req, res) => {
       return res.status(404).send("Watchlist not found");
     }
 
-    watchlist.description = description;
+    watchlist.description = cleanedDescription;
     await user.save();
 
     res.json({ message: "Description updated" });

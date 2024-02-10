@@ -28,7 +28,7 @@ const sendVerificationEmailForAccountDelete = async (userId) => {
     from: process.env.EMAIL_USERNAME, // 发送者邮箱
     to: email, // 接收者邮箱，即用户的新邮箱地址
     subject: "NextAni User Account Deletation Confirmation", // 邮件主题
-    html: `<p>Hello,<br/> We have received a request to delete your Vercel account and all of its associated data.<br/>To complete the deletion your account, please click the link below:</p>
+    html: `<p>Hello,<br/> We have received a request to delete your NextAni account and all of its associated data.<br/>To complete the deletion your account, please click the link below:</p>
     <a href="${process.env.SITE_URL}/account-deleted?&token=${token}">${process.env.SITE_URL}/account-deleted?&token=${token}</a>`, // HTML邮件内容
   };
 

@@ -68,7 +68,7 @@ const userSchema = new mongoose.Schema({
         items: [Number],
       },
     ],
-    default: [{ name: "Default", description: "", items: [] }], // default
+    default: [{ name: "Default list", description: "", items: [] }], // default
   },
 
   history: [

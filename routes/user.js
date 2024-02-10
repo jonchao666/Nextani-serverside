@@ -2,6 +2,7 @@ const express = require("express");
 
 const router = express.Router();
 const User = require("../models/User");
+const xss = require("xss");
 
 //get user information
 router.get("/", async (req, res) => {
@@ -51,13 +52,14 @@ router.post("/updateDisplayName", async (req, res) => {
 
     // 从请求体中获取新的 displayName
     const { displayName } = req.body;
+    const clearedDisplayName = xss(displayName.trim());
 
     if (!displayName) {
       return res.status(400).send("Display name is required");
     }
 
     // 更新用户的 displayName
-    user.displayName = displayName;
+    user.displayName = clearedDisplayName;
     await user.save();
 
     res.json({
@@ -82,6 +84,7 @@ router.post("/verifyEmail", async (req, res) => {
     }
 
     const { email } = req.body;
+    const clearedEmail = xss(email.trim());
 
     if (!email) {
       return res.status(400).send("Email is required");
@@ -96,7 +99,7 @@ router.post("/verifyEmail", async (req, res) => {
       return res.status(400).send("Email already in use");
     }
 
-    sendVerificationEmailForEmailChange(email, req.user.id);
+    sendVerificationEmailForEmailChange(clearedEmail, req.user.id);
 
     res.json({
       message:
@@ -118,7 +121,7 @@ router.post("/updateEmail", async (req, res) => {
 
     // 从请求体中获取新的 displayName
     const { email, token } = req.body;
-
+    const clearedEmail = xss(email.trim());
     if (!email) {
       return res.status(400).send("email is required");
     }
@@ -128,12 +131,12 @@ router.post("/updateEmail", async (req, res) => {
     }
     user.updateEmailToken = null;
     // 更新用户的 displayName
-    user.email = email;
+    user.email = clearedEmail;
     await user.save();
 
     res.json({
       message: "Email updated successfully",
-      email: user.email,
+      email: user.clearedEmail,
     });
   } catch (error) {
     res.status(500).send("Server error");
@@ -145,6 +148,7 @@ router.post("/checkEmailUpdated", async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
     const { email } = req.body;
+
     if (!user) {
       return res.status(404).send("User not found");
     }
