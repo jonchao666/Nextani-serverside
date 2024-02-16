@@ -14,25 +14,9 @@ router.get("/", async (req, res) => {
     }
 
     let userInfo = {
-      email: user.email,
-      displayName: user.displayName,
-      profilePicture: user.profilePicture || "",
-      google: {
-        email: user.email || user.google.email,
-        displayName: user.displayName || user.google.displayName,
-        profilePicture: user.profilePicture || user.google.profilePicture || "",
-      },
-      microsoft: {
-        email: user.email || user.microsoft.email,
-        displayName: user.displayName || user.microsoft.displayName,
-        profilePicture:
-          user.profilePicture || user.microsoft.profilePicture || "",
-      },
-      apple: {
-        email: user.email || user.apple.email,
-        displayName: user.displayName || user.apple.displayName,
-        profilePicture: user.profilePicture || user.apple.profilePicture || "",
-      },
+      email: user.email || user.google.email,
+      displayName: user.displayName || user.google.displayName || "",
+      profilePicture: user.profilePicture || user.google.profilePicture || "",
     };
 
     res.json(userInfo);

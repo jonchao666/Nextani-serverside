@@ -229,7 +229,7 @@ router.get("/history", async (req, res) => {
         animeDetail,
       };
     });
-    console.log(historyWithDetails);
+
     res.json(historyWithDetails);
   } catch (error) {
     console.error("Server error", error);

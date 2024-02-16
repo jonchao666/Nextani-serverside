@@ -5,7 +5,6 @@ const userSchema = new mongoose.Schema({
   local: {
     password: {
       type: String,
-      set: (password) => bcrypt.hashSync(password, bcrypt.genSaltSync(10)), // 密码加密
     },
   },
   // 社交账户信息
@@ -19,38 +18,16 @@ const userSchema = new mongoose.Schema({
     displayName: String,
     profilePicture: String,
   },
-  microsoft: {
-    id: {
-      type: String,
-      unique: true,
-      sparse: true,
-    },
-    email: String,
-    displayName: String,
-    profilePicture: String,
-  },
-  apple: {
-    id: {
-      type: String,
-      unique: true,
-      sparse: true,
-    },
-    email: String,
-    displayName: String,
-    profilePicture: String,
-  },
+
   // 共通的用户信息
   email: {
     type: String,
     unique: true,
     sparse: true,
-    match: [
-      /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
-      "Please fill a valid email address",
-    ], // 简单的邮箱格式验证
   },
   updateEmailToken: String,
   deleteAccountToken: String,
+  signUpEmailVerifyToken: String,
   displayName: String,
   profilePicture: String,
   likedPerson: [Number],
@@ -68,7 +45,6 @@ const userSchema = new mongoose.Schema({
         items: [Number],
       },
     ],
-    default: [{ name: "Default list", description: "", items: [] }], // default
   },
 
   history: [
@@ -93,13 +69,15 @@ const userSchema = new mongoose.Schema({
 });
 
 // 在保存用户之前加密密码（如果密码被修改）
-userSchema.pre("save", function (next) {
+userSchema.pre("save", async function (next) {
   if (!this.isModified("local.password")) return next();
-  this.local.password = bcrypt.hashSync(
-    this.local.password,
-    bcrypt.genSaltSync(10)
-  );
-  next();
+  try {
+    const salt = await bcrypt.genSalt(10);
+    this.local.password = await bcrypt.hash(this.local.password, salt);
+    next();
+  } catch (error) {
+    next(error);
+  }
 });
 
 // 实用方法，例如验证密码

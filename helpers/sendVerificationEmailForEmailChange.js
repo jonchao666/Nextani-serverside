@@ -4,6 +4,7 @@ const crypto = require("crypto");
 const sendVerificationEmailForEmailChange = async (newEmail, userId) => {
   const user = await User.findById(userId);
   const token = crypto.randomBytes(48).toString("hex");
+
   if (!user) {
     throw new Error("User not found");
   }

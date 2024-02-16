@@ -4,6 +4,7 @@ const crypto = require("crypto");
 const sendVerificationEmailForAccountDelete = async (userId) => {
   const user = await User.findById(userId);
   const token = crypto.randomBytes(48).toString("hex");
+
   if (!user) {
     throw new Error("User not found");
   }
