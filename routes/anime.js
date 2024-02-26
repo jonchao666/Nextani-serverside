@@ -10,7 +10,7 @@ const verifyApiKey = require("../validation");
 router.get("/", verifyApiKey, async (req, res) => {
   try {
     // 获取查询参数
-    const {
+    let {
       mal_id,
       type,
       season,
@@ -18,15 +18,18 @@ router.get("/", verifyApiKey, async (req, res) => {
       genre,
       director,
       year,
+      yearAndSeason,
       status,
       rating,
       page = 1,
       select = false,
       limit = 18,
+      isSensitiveFilterDisabled = "false",
     } = req.query;
 
     let query = {};
-
+    limit = Number(limit);
+    isSensitiveFilterDisabled = isSensitiveFilterDisabled === "true";
     const skip = (page - 1) * limit; // 跳过的文档数
 
     if (mal_id) {
@@ -67,44 +70,107 @@ router.get("/", verifyApiKey, async (req, res) => {
       }
     }
 
+    if (yearAndSeason) {
+      if (Array.isArray(yearAndSeason) && yearAndSeason.length > 0) {
+        query["$or"] = yearAndSeason.map((ys) => {
+          const year = Number(ys[0]);
+          const season = ys[1]; // 假设season已经是正确的格式
+
+          return {
+            "apiData.aired.prop.from.year": year,
+            $or: [
+              {
+                "apiData.aired.prop.from.month":
+                  seasonMonth[season.toLowerCase()],
+              }, // 如果你还需要基于月份的过滤
+              { "apiData.season": season }, // 直接使用season进行过滤
+            ],
+          };
+        });
+      }
+    }
+
     if (status) {
       query["apiData.status"] = status;
     }
-    if (rating) {
+    if (isSensitiveFilterDisabled === false) {
+      query["apiData.rating"] = { $ne: "Rx - Hentai" };
+    } else if (rating) {
       query["apiData.rating"] = rating;
     }
 
     // 构建排序条件
-    let sortCriteria = {};
-    switch (sortBy) {
-      case "members":
-        sortCriteria["apiData.members"] = -1;
-        break;
-      case "score":
-        sortCriteria["apiData.score"] = -1;
-        break;
-      case "favorites":
-        sortCriteria["apiData.favorites"] = -1;
-      default:
-        break;
-    }
+    if (sortBy === "overall") {
+      const aggregatePipeline = [
+        { $match: query },
+        {
+          $addFields: {
+            weightedScore: {
+              $add: [
+                {
+                  $cond: {
+                    if: { $ifNull: ["$apiData.rank", false] }, // 检查rank字段是否存在
+                    then: { $divide: [1, { $add: ["$apiData.rank", 0.01] }] }, // 使用倒数，避免除以0
+                    else: 0, // 如果不存在，其贡献为0
+                  },
+                },
+                {
+                  $cond: {
+                    if: { $ifNull: ["$apiData.popularity", false] }, // 检查popularity字段是否存在
+                    then: {
+                      $divide: [1, { $add: ["$apiData.popularity", 0.01] }],
+                    }, // 使用倒数，避免除以0
+                    else: 0, // 如果不存在，其贡献为0
+                  },
+                },
+              ],
+            },
+          },
+        },
+        { $sort: { weightedScore: -1 } },
+        { $skip: skip },
+        { $limit: limit },
+        {
+          $project: {
+            _id: 0,
+            "apiData.images.webp.large_image_url": 1,
+            "apiData.title": 1,
+            "apiData.type": 1,
+            "apiData.score": 1,
+            "apiData.aired.prop.from.year": 1,
+            "apiData.genres.name": 1,
+            mal_id: 1,
+          },
+        },
+      ];
 
-    // 执行查询
-
-    if (select) {
-      s = "";
+      let foundAnimes = await Anime.aggregate(aggregatePipeline);
+      res.json(foundAnimes);
     } else {
-      s =
-        "apiData.images.webp.large_image_url apiData.title apiData.type apiData.score apiData.aired.prop.from.year apiData.genres.name mal_id ";
+      // 原始的排序逻辑，用于处理非"overall"的sortBy值
+      let sortCriteria = {};
+      switch (sortBy) {
+        case "popularity":
+          sortCriteria["apiData.members"] = -1;
+          break;
+        case "score":
+          sortCriteria["apiData.score"] = -1;
+          break;
+      }
+
+      select = select
+        ? ""
+        : "apiData.images.webp.large_image_url apiData.title apiData.type apiData.score apiData.aired.prop.from.year apiData.genres.name mal_id";
+
+      let foundAnimes = await Anime.find(query)
+        .skip(skip)
+        .limit(limit)
+        .sort(sortCriteria)
+
+        .select(select);
+
+      res.json(foundAnimes);
     }
-
-    let foundAnimes = await Anime.find(query)
-      .skip(skip)
-      .limit(limit)
-      .sort(sortCriteria)
-      .select(s);
-
-    res.json(foundAnimes);
   } catch (e) {
     console.error(e.message);
     res.status(500).json({ message: "internal server error" });
@@ -112,9 +178,14 @@ router.get("/", verifyApiKey, async (req, res) => {
 });
 
 router.get("/search", verifyApiKey, async (req, res) => {
-  const { query, limit, page = 1 } = req.query;
-  const skip = (page - 1) * limit;
-  // 可以使用正则表达式来实现模糊匹配
+  let {
+    query,
+    limit,
+    page = 1,
+    isSensitiveFilterDisabled = "false",
+  } = req.query;
+
+  isSensitiveFilterDisabled = isSensitiveFilterDisabled === "true";
   let searchCriteria = {
     "apiData.titles": {
       $elemMatch: {
@@ -122,7 +193,10 @@ router.get("/search", verifyApiKey, async (req, res) => {
       },
     },
   };
-
+  if (!isSensitiveFilterDisabled) {
+    searchCriteria["apiData.rating"] = { $ne: "Rx - Hentai" };
+  }
+  const skip = (page - 1) * limit;
   try {
     let foundAnimes = await Anime.find(searchCriteria)
       .skip(skip)

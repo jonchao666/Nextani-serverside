@@ -208,4 +208,39 @@ router.get("/checkAccountDeleted", async (req, res) => {
   }
 });
 
+router.get("/isSensitiveFilterDisabled", async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).send("User not found");
+    }
+
+    let isSensitiveFilterDisabled = user.isSensitiveFilterDisabled;
+    res.json({ isSensitiveFilterDisabled: isSensitiveFilterDisabled });
+  } catch (error) {
+    console.error("Server error", error);
+    res.status(500).send("Server error");
+  }
+});
+
+router.post("/isSensitiveFilterDisabled", async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).send("User not found");
+    }
+
+    let { isSensitiveFilterDisabled } = req.body;
+
+    user.isSensitiveFilterDisabled = isSensitiveFilterDisabled;
+    await user.save();
+
+    res.json({ message: "IsSensitiveFilterDisabled updated" });
+  } catch (error) {
+    console.error("Server error", error);
+    res.status(500).send("Server error");
+  }
+});
 module.exports = router;

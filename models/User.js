@@ -64,8 +64,10 @@ const userSchema = new mongoose.Schema({
     default: Date.now,
   },
 
-  // 其他用户信息，例如性别、生日等
-  // ...
+  isSensitiveFilterDisabled: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 // 在保存用户之前加密密码（如果密码被修改）
