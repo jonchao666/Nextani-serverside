@@ -6,11 +6,16 @@ const User = require("../models/User");
 const TempUser = require("../models/TempUser");
 const crypto = require("crypto");
 const sendVerificationEmailForSignUp = require("../helpers/sendVerificationEmailForSignUp");
+const authenticateToken = require("../middleware/authenticateToken");
 
 router.get(
   "/google",
   passport.authenticate("google", { scope: ["profile", "email"] })
 );
+
+router.get("/verifyToken", authenticateToken, (req, res) => {
+  res.json({ message: "Authenticated" });
+});
 
 router.get(
   "/google/callback",
@@ -39,7 +44,6 @@ router.post("/localVerifyEmail", async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // 检查正式用户中是否已存在该电子邮件
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).send("Email already exists.");
@@ -59,16 +63,14 @@ router.post("/localVerifyEmail", async (req, res) => {
 
     let tempUser = await TempUser.findOne({ email });
     if (tempUser) {
-      // 如果存在，更新 token 和 tokenExpires
       tempUser.token = token;
-      tempUser.tokenExpires = new Date(Date.now() + 3600000); // 重新设置token过期时间
+      tempUser.tokenExpires = new Date(Date.now() + 3600000);
     } else {
-      // 如果不存在，创建一个新的 TempUser 实例，密码将在保存时自动加密
       tempUser = new TempUser({
         email,
-        password, // 直接赋值，pre("save") 钩子会处理加密
+        password,
         token,
-        tokenExpires: new Date(Date.now() + 3600000), // 设置token过期时间
+        tokenExpires: new Date(Date.now() + 3600000),
       });
     }
     await tempUser.save();

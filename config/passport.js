@@ -9,7 +9,8 @@ passport.use(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: "/auth/google/callback",
+      callbackURL:
+        "https://nextani-415707.an.r.appspot.com/auth/google/callback",
       session: false,
     },
     async function (accessToken, refreshToken, profile, done) {

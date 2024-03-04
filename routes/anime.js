@@ -16,7 +16,7 @@ router.get("/", verifyApiKey, async (req, res) => {
       season,
       sortBy,
       genre,
-      director,
+
       year,
       yearAndSeason,
       status,
@@ -45,14 +45,7 @@ router.get("/", verifyApiKey, async (req, res) => {
     if (genre) {
       query["apiData.genres.name"] = genre;
     }
-    if (director) {
-      query["apiData.staff"] = {
-        $elemMatch: {
-          "person.name": director,
-          positions: "Director",
-        },
-      };
-    }
+
     if (year) {
       if (Array.isArray(year)) {
         query["apiData.aired.prop.from.year"] = year.map((y) => Number(y));
@@ -211,7 +204,7 @@ router.get("/search", verifyApiKey, async (req, res) => {
       ),
     }));
 
-    res.json(formattedResults);
+    return res.json(formattedResults);
   } catch (e) {
     console.error(e.message);
     res.status(500).json({ message: "internal server error" });
@@ -272,4 +265,71 @@ router.get("/test", verifyApiKey, async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 });
+
+router.get("/recommendations", verifyApiKey, async (req, res) => {
+  let {
+    mal_id,
+    isSensitiveFilterDisabled = "false",
+    page = 1,
+    limit = 7,
+  } = req.query;
+  isSensitiveFilterDisabled = isSensitiveFilterDisabled === "true";
+  page = parseInt(page);
+  limit = parseInt(limit);
+  const skip = (page - 1) * limit;
+
+  try {
+    const targetAnime = await Anime.findOne({ mal_id: mal_id });
+    if (!targetAnime) {
+      return res.status(404).json({ message: "Anime not found" });
+    }
+
+    const genres = targetAnime.apiData.genres.map((genre) => genre.name);
+    const themes = targetAnime.apiData.themes.map((theme) => theme.name);
+
+    let matchStage = {
+      $match: {
+        mal_id: { $ne: parseInt(mal_id) },
+        ...(isSensitiveFilterDisabled
+          ? {}
+          : { "apiData.rating": { $ne: "Rx - Hentai" } }),
+      },
+    };
+
+    const recommendations = await Anime.aggregate([
+      matchStage,
+      {
+        $addFields: {
+          similarityScore: {
+            $add: [
+              { $size: { $setIntersection: ["$apiData.genres.name", genres] } },
+              { $size: { $setIntersection: ["$apiData.themes.name", themes] } },
+            ],
+          },
+        },
+      },
+      { $match: { similarityScore: { $gt: 0 } } },
+      { $sort: { similarityScore: -1, "apiData.popularity": 1 } },
+      { $skip: skip }, // Apply pagination skip
+      { $limit: limit }, // Apply pagination limit
+      {
+        $project: {
+          _id: 0,
+          mal_id: 1,
+          "apiData.images.webp.large_image_url": 1,
+          "apiData.title": 1,
+          "apiData.score": 1,
+          "apiData.genres.name": 1,
+          similarityScore: 1,
+        },
+      },
+    ]);
+
+    res.json(recommendations);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 module.exports = router;

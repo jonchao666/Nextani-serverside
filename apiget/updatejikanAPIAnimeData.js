@@ -37,15 +37,10 @@ const getJikan = async (page = 1, retries = 3) => {
 };
 
 const saveAnimeToDb = async (animeData) => {
-  const updateData = {};
-  Object.keys(animeData).forEach((key) => {
-    updateData[`apiData.${key}`] = animeData[key];
-  });
-
   try {
     await Anime.updateOne(
       { mal_id: animeData.mal_id },
-      { $set: updateData },
+      { $set: { apiData: animeData } },
       { upsert: true }
     );
     console.log(`Saved or updated anime ${animeData.title} in database.`);

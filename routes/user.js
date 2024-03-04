@@ -15,7 +15,7 @@ router.get("/", async (req, res) => {
 
     let userInfo = {
       email: user.email || user.google.email,
-      displayName: user.displayName || user.google.displayName || "",
+      displayName: user.displayName || user.google.displayName,
       profilePicture: user.profilePicture || user.google.profilePicture || "",
     };
 
@@ -40,6 +40,9 @@ router.post("/updateDisplayName", async (req, res) => {
 
     if (!displayName) {
       return res.status(400).send("Display name is required");
+    }
+    if (displayName.length > 20) {
+      return res.status(400).send("Please use 20 characters at maximum.");
     }
 
     // 更新用户的 displayName
