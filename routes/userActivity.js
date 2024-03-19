@@ -11,9 +11,10 @@ const select =
 //likedAnime
 router.get("/likedAnime", async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    let user = await User.findOne({ firebaseUid: req.user.uid });
+
     if (!user) {
-      return res.status(404).send("User not found");
+      return res.status(404).send("User not found.");
     }
 
     // Extract page and limit from query parameters
@@ -46,11 +47,11 @@ router.get("/likedAnime", async (req, res) => {
 //confirm if liked anime
 router.get("/ifAnimeLiked/:mal_id", async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
-    if (!user) {
-      return res.status(404).send("User not found");
-    }
+    let user = await User.findOne({ firebaseUid: req.user.uid });
 
+    if (!user) {
+      return res.status(404).send("User not found.");
+    }
     const { mal_id } = req.params;
 
     const isLiked = user.likedAnime.includes(Number(mal_id));
@@ -64,10 +65,12 @@ router.get("/ifAnimeLiked/:mal_id", async (req, res) => {
 
 router.post("/likedAnimeAdd", async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    let user = await User.findOne({ firebaseUid: req.user.uid });
+
     if (!user) {
-      return res.status(404).send("User not found");
+      return res.status(404).send("User not found.");
     }
+
     const { mal_id } = req.body;
 
     if (!mal_id) {
@@ -85,10 +88,12 @@ router.post("/likedAnimeAdd", async (req, res) => {
 
 router.delete("/likedAnime/:mal_id", async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    let user = await User.findOne({ firebaseUid: req.user.uid });
+
     if (!user) {
-      return res.status(404).send("User not found");
+      return res.status(404).send("User not found.");
     }
+
     const { mal_id } = req.params;
 
     if (!mal_id) {
@@ -107,9 +112,10 @@ router.delete("/likedAnime/:mal_id", async (req, res) => {
 
 router.get("/likedPerson", async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    let user = await User.findOne({ firebaseUid: req.user.uid });
+
     if (!user) {
-      return res.status(404).send("User not found");
+      return res.status(404).send("User not found.");
     }
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 8; // Default limit
@@ -140,11 +146,11 @@ router.get("/likedPerson", async (req, res) => {
 //confirm if person liked
 router.get("/ifPersonLiked/:mal_id", async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
-    if (!user) {
-      return res.status(404).send("User not found");
-    }
+    let user = await User.findOne({ firebaseUid: req.user.uid });
 
+    if (!user) {
+      return res.status(404).send("User not found.");
+    }
     const { mal_id } = req.params;
 
     const isLiked = user.likedPerson.includes(Number(mal_id));
@@ -157,10 +163,12 @@ router.get("/ifPersonLiked/:mal_id", async (req, res) => {
 
 router.post("/likedPersonAdd", async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    let user = await User.findOne({ firebaseUid: req.user.uid });
+
     if (!user) {
-      return res.status(404).send("User not found");
+      return res.status(404).send("User not found.");
     }
+
     const { mal_id } = req.body;
 
     if (!mal_id) {
@@ -178,10 +186,12 @@ router.post("/likedPersonAdd", async (req, res) => {
 
 router.delete("/likedPerson/:mal_id", async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    let user = await User.findOne({ firebaseUid: req.user.uid });
+
     if (!user) {
-      return res.status(404).send("User not found");
+      return res.status(404).send("User not found.");
     }
+
     const { mal_id } = req.params;
 
     if (!mal_id) {
@@ -201,11 +211,11 @@ router.delete("/likedPerson/:mal_id", async (req, res) => {
 //history
 router.get("/history", async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
-    if (!user) {
-      return res.status(404).send("User not found");
-    }
+    let user = await User.findOne({ firebaseUid: req.user.uid });
 
+    if (!user) {
+      return res.status(404).send("User not found.");
+    }
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 14; // Default limit
     const skip = (page - 1) * limit;
@@ -239,11 +249,12 @@ router.get("/history", async (req, res) => {
 
 router.post("/historyAdd", async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    let user = await User.findOne({ firebaseUid: req.user.uid });
 
     if (!user) {
-      return res.status(404).send("User not found");
+      return res.status(404).send("User not found.");
     }
+
     const { mal_id } = req.body;
 
     if (!mal_id) {
@@ -274,10 +285,12 @@ router.post("/historyAdd", async (req, res) => {
 
 router.delete("/history/:mal_id", async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    let user = await User.findOne({ firebaseUid: req.user.uid });
+
     if (!user) {
-      return res.status(404).send("User not found");
+      return res.status(404).send("User not found.");
     }
+
     const { mal_id } = req.params;
 
     if (!mal_id) {
@@ -299,9 +312,10 @@ router.delete("/history/:mal_id", async (req, res) => {
 //delete all history
 router.delete("/history", async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    let user = await User.findOne({ firebaseUid: req.user.uid });
+
     if (!user) {
-      return res.status(404).send("User not found");
+      return res.status(404).send("User not found.");
     }
 
     // 清空历史记录
@@ -318,9 +332,10 @@ router.delete("/history", async (req, res) => {
 //watchlist
 router.get("/watchlist/:name", async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    let user = await User.findOne({ firebaseUid: req.user.uid });
+
     if (!user) {
-      return res.status(404).send("User not found");
+      return res.status(404).send("User not found.");
     }
 
     const { name } = req.params;
@@ -366,11 +381,11 @@ router.get("/watchlist/:name", async (req, res) => {
 //watchlists
 router.get("/watchlists/", async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
-    if (!user) {
-      return res.status(404).send("User not found");
-    }
+    let user = await User.findOne({ firebaseUid: req.user.uid });
 
+    if (!user) {
+      return res.status(404).send("User not found.");
+    }
     const page = parseInt(req.query.page) || 1;
     let limit = parseInt(req.query.limit) || 14;
     const skip = (page - 1) * limit;
@@ -409,11 +424,11 @@ router.get("/watchlists/", async (req, res) => {
 //watchlists without animedetails
 router.get("/watchlistsWithoutAnimeDetails/", async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
-    if (!user) {
-      return res.status(404).send("User not found");
-    }
+    let user = await User.findOne({ firebaseUid: req.user.uid });
 
+    if (!user) {
+      return res.status(404).send("User not found.");
+    }
     res.json(user.watchlist);
   } catch (error) {
     console.error("Server error", error);
@@ -424,11 +439,11 @@ router.get("/watchlistsWithoutAnimeDetails/", async (req, res) => {
 //get all Watchlists which anime In
 router.get("/animeInWatchlists/:mal_id", async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
-    if (!user) {
-      return res.status(404).send("User not found");
-    }
+    let user = await User.findOne({ firebaseUid: req.user.uid });
 
+    if (!user) {
+      return res.status(404).send("User not found.");
+    }
     const { mal_id } = req.params;
 
     const watchlistsContainingAnime = user.watchlist.filter((watchlist) =>
@@ -443,13 +458,13 @@ router.get("/animeInWatchlists/:mal_id", async (req, res) => {
 });
 router.post("/watchlist/create", async (req, res) => {
   try {
-    let user = await User.findById(req.user.id);
+    let user = await User.findOne({ firebaseUid: req.user.uid });
 
     if (!user) {
       return res.status(404).send("User not found.");
     }
 
-    let { name, mal_id, description } = req.body;
+    let { name, mal_id } = req.body;
 
     name = xss(name.trim());
 
@@ -480,11 +495,8 @@ router.post("/watchlist/create", async (req, res) => {
         .send(`You can only create up to ${MAX_WATCHLIST_COUNT} watchlists.`);
     }
 
-    description = description ? xss(description) : "";
-
     const newWatchlistEntry = {
       name,
-      description,
       items: mal_id ? [Number(mal_id)] : [],
     };
 
@@ -501,9 +513,14 @@ router.post("/watchlist/create", async (req, res) => {
 
 router.delete("/watchlist/:name", async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    let user = await User.findOne({ firebaseUid: req.user.uid });
+
     if (!user) {
-      return res.status(404).send("User not found");
+      return res.status(404).send("User not found.");
+    }
+
+    if (!user) {
+      return res.status(404).send("User not found.");
     }
 
     const { name } = req.params;
@@ -525,10 +542,16 @@ router.delete("/watchlist/:name", async (req, res) => {
 
 router.post("/watchlist/:name/addItem", async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    let user = await User.findOne({ firebaseUid: req.user.uid });
+
     if (!user) {
-      return res.status(404).send("User not found");
+      return res.status(404).send("User not found.");
     }
+
+    if (!user) {
+      return res.status(404).send("User not found.");
+    }
+
     const { name } = req.params;
     const { mal_id } = req.body;
 
@@ -572,9 +595,14 @@ router.post("/watchlist/:name/addItem", async (req, res) => {
 
 router.delete("/watchlist/:name/item/:mal_id", async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    let user = await User.findOne({ firebaseUid: req.user.uid });
+
     if (!user) {
-      return res.status(404).send("User not found");
+      return res.status(404).send("User not found.");
+    }
+
+    if (!user) {
+      return res.status(404).send("User not found.");
     }
 
     const { name, mal_id } = req.params;
@@ -603,9 +631,14 @@ router.delete("/watchlist/:name/item/:mal_id", async (req, res) => {
 
 router.patch("/watchlist/rename/:oldName", async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    let user = await User.findOne({ firebaseUid: req.user.uid });
+
     if (!user) {
-      return res.status(404).send("User not found");
+      return res.status(404).send("User not found.");
+    }
+
+    if (!user) {
+      return res.status(404).send("User not found.");
     }
 
     const { oldName } = req.params;
@@ -638,9 +671,14 @@ router.patch("/watchlist/rename/:oldName", async (req, res) => {
 
 router.patch("/watchlist/updateDescription/:name", async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    let user = await User.findOne({ firebaseUid: req.user.uid });
+
     if (!user) {
-      return res.status(404).send("User not found");
+      return res.status(404).send("User not found.");
+    }
+
+    if (!user) {
+      return res.status(404).send("User not found.");
     }
 
     const { name } = req.params;

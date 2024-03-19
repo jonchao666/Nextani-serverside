@@ -1,24 +1,21 @@
-const jwt = require("jsonwebtoken");
-const User = require("../models/User");
+const { firebaseAdmin } = require("../firebaseConfig");
 
-function authenticateToken(req, res, next) {
-  const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1];
+const authenticateToken = async (req, res, next) => {
+  const token = req.headers.authorization?.split(" ")[1]; // Bearer YOUR_TOKEN_HERE
+  if (!token) {
+    return res
+      .status(401)
+      .send({ message: "Access denied. No token provided." });
+  }
 
-  if (token == null) return res.sendStatus(401);
-
-  // 使用decoded代替user来表示解码后的JWT信息
-  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, async (err, decoded) => {
-    if (err) return res.sendStatus(403);
-
-    const user = await User.findById(decoded.id);
-
-    if (!user) {
-      return res.sendStatus(401);
-    }
-
-    req.user = user;
+  try {
+    const decodedToken = await firebaseAdmin.auth().verifyIdToken(token);
+    req.user = decodedToken;
     next();
-  });
-}
+  } catch (error) {
+    console.error("Token verification error:", error); // Log the error for server monitoring
+    res.status(403).send({ message: "Invalid or expired token." });
+  }
+};
+
 module.exports = authenticateToken;

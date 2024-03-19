@@ -16,7 +16,6 @@ router.get("/", verifyApiKey, async (req, res) => {
       season,
       sortBy,
       genre,
-
       year,
       yearAndSeason,
       status,
@@ -92,7 +91,6 @@ router.get("/", verifyApiKey, async (req, res) => {
       query["apiData.rating"] = rating;
     }
 
-    // 构建排序条件
     if (sortBy === "overall") {
       const aggregatePipeline = [
         { $match: query },
@@ -102,18 +100,18 @@ router.get("/", verifyApiKey, async (req, res) => {
               $add: [
                 {
                   $cond: {
-                    if: { $ifNull: ["$apiData.rank", false] }, // 检查rank字段是否存在
-                    then: { $divide: [1, { $add: ["$apiData.rank", 0.01] }] }, // 使用倒数，避免除以0
-                    else: 0, // 如果不存在，其贡献为0
+                    if: { $ifNull: ["$apiData.rank", false] },
+                    then: { $divide: [1, { $add: ["$apiData.rank", 0.01] }] },
+                    else: 0,
                   },
                 },
                 {
                   $cond: {
-                    if: { $ifNull: ["$apiData.popularity", false] }, // 检查popularity字段是否存在
+                    if: { $ifNull: ["$apiData.popularity", false] },
                     then: {
                       $divide: [1, { $add: ["$apiData.popularity", 0.01] }],
-                    }, // 使用倒数，避免除以0
-                    else: 0, // 如果不存在，其贡献为0
+                    },
+                    else: 0,
                   },
                 },
               ],
@@ -140,7 +138,6 @@ router.get("/", verifyApiKey, async (req, res) => {
       let foundAnimes = await Anime.aggregate(aggregatePipeline);
       res.json(foundAnimes);
     } else {
-      // 原始的排序逻辑，用于处理非"overall"的sortBy值
       let sortCriteria = {};
       switch (sortBy) {
         case "popularity":
@@ -193,7 +190,7 @@ router.get("/search", verifyApiKey, async (req, res) => {
   try {
     let foundAnimes = await Anime.find(searchCriteria)
       .skip(skip)
-      .sort({ "apiData.popularity": 1 }) // 根据相关度排序
+      .sort({ "apiData.popularity": 1 })
       .limit(parseInt(limit) || 10); // Adjust this to select the required fields
     // Optionally, process the results to format them as desired
     let formattedResults = foundAnimes.map((anime) => ({

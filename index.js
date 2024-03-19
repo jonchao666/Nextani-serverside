@@ -6,8 +6,7 @@ const mongoose = require("mongoose");
 const authenticateToken = require("./middleware/authenticateToken");
 const cors = require("cors");
 const PORT = process.env.PORT || 8080;
-const passport = require("passport");
-require("./config/passport");
+
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
@@ -60,18 +59,13 @@ app.use(cors());
 // app.use(cors({ origin: 'https://www.nextani.net' }));
 app.use(compression());
 app.use("/user", authenticateToken);
-app.use("/upload", authenticateToken);
-app.use("/userActivity", authenticateToken);
-app.use("/profilePicture", express.static("uploads/profilePicture"));
 
-app.use("/auth", require("./routes/auth"));
+app.use("/userActivity", authenticateToken);
 app.use("/anime", require("./routes/anime"));
 app.use("/user", require("./routes/user"));
 app.use("/userActivity", require("./routes/userActivity"));
 app.use("/people", require("./routes/people"));
 app.use("/cron", require("./routes/cron"));
-
-app.use("/upload", require("./routes/upload.js"));
 
 app.get("/", (req, res) => {
   res.send("Hello World");
