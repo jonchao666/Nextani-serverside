@@ -55,8 +55,34 @@ connectWithRetry();
 //middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors());
-// app.use(cors({ origin: 'https://www.nextani.net' }));
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      const allowedOrigins = [
+        /^https:\/\/(\w+\.)?nextani\.net$/,
+        /^https:\/\/nextani-2xy0ra37w-jonchao666\.vercel\.app$/,
+        /^https:\/\/nextani-phi\.vercel\.app$/,
+      ];
+
+      if (process.env.NODE_ENV === "dev") {
+        allowedOrigins.push(/^http:\/\/localhost(:\d+)?$/);
+      }
+
+      const isAllowed = allowedOrigins.some((allowedOrigin) => {
+        return typeof allowedOrigin === "string"
+          ? allowedOrigin === origin
+          : allowedOrigin.test(origin);
+      });
+
+      if (!origin || isAllowed) {
+        callback(null, true);
+      } else {
+        callback(new Error("不允许的跨域请求"), false);
+      }
+    },
+  })
+);
+
 app.use(compression());
 app.use("/user", authenticateToken);
 

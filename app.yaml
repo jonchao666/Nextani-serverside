@@ -1,12 +1,5 @@
 runtime: nodejs18
 
 env_variables:
-  UPDATEANIME_SECRET_KEY: "ASFHUIE164fggerg"
   MONGODB_URI: "mongodb+srv://jonchao:SfUoVLkMnquqHbRu@nextani.a1guio0.mongodb.net/?retryWrites=true&w=majority"
   API_KEY: "oashfoshife161684efwerg"
-  SITE_URL: "http://localhost:3000"
-  GOOGLE_CLIENT_ID: "218013518381-583mubveutmddt3fkj2eo8juntokl0n9.apps.googleusercontent.com"
-  GOOGLE_CLIENT_SECRET: "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"
-  ACCESS_TOKEN_SECRET: "Y9GCxyy$YdsyPgKcXQBRip*oen&Pv$E5"
-  EMAIL_USERNAME: "nextani.net@gmail.com"
-  EMAIL_PASSWORD: "johmmiunhadvuutp"

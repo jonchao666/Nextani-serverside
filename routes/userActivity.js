@@ -456,6 +456,7 @@ router.get("/animeInWatchlists/:mal_id", async (req, res) => {
     res.status(500).send("Server error");
   }
 });
+
 router.post("/watchlist/create", async (req, res) => {
   try {
     let user = await User.findOne({ firebaseUid: req.user.uid });
@@ -500,7 +501,7 @@ router.post("/watchlist/create", async (req, res) => {
       items: mal_id ? [Number(mal_id)] : [],
     };
 
-    user.watchlist.splice(1, 0, newWatchlistEntry);
+    user.watchlist.unshift(newWatchlistEntry);
 
     await user.save();
 
