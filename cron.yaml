@@ -2,6 +2,12 @@ cron:
   - description: "update jikan API Anime Data at 10:00 utc every day"
     url: /cron/updatejikanAPIAnimeData
     schedule: every day 10:00
+  - description: "update jikan API Anime Data at 22:00 utc every day"
+    url: /cron/updatejikanAPIAnimeData
+    schedule: every day 22:00
   - description: "update jikan API People Data at 10:00 utc every day"
     url: /cron/updatejikanAPIPeopleData
     schedule: every day 10:00
+  - description: "update jikan API People Data at 22:00 utc every day"
+    url: /cron/updatejikanAPIPeopleData
+    schedule: every day 22:00

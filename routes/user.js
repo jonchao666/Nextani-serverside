@@ -6,6 +6,7 @@ const User = require("../models/User");
 router.get("/", async (req, res) => {
   try {
     let user = await User.findOne({ firebaseUid: req.user.uid });
+
     if (!user) {
       user = new User({
         firebaseUid: req.user.uid,
