@@ -8,6 +8,7 @@ const limiter = new Bottleneck({
   minTime: 333,
   reservoir: 60,
   reservoirRefreshAmount: 60,
+  reservoirRefreshInterval: 60 * 1000,
 });
 
 const getJikan = async (page = 1, retries = 3) => {
@@ -74,6 +75,10 @@ const updatejikanAPIAnimeData = async () => {
         break;
       } catch (error) {
         console.error(`Error fetching page ${page}: ${error}`);
+        error.errors.forEach((e) => {
+          console.error(e);
+        });
+
         retries++;
         if (retries >= maxRetries) {
           console.error(`Max retries reached for page ${page}. Skipping.`);

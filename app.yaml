@@ -1,0 +1,5 @@
+runtime: nodejs18
+
+env_variables:
+  MONGODB_URI: "mongodb+srv://jonchao:SfUoVLkMnquqHbRu@nextani.a1guio0.mongodb.net/?retryWrites=true&w=majority"
+  API_KEY: "oashfoshife161684efwerg"

@@ -55,7 +55,7 @@ const savePeopleToDb = async (peopleData) => {
 
 const updatejikanAPIPeopleData = async () => {
   let page = 1;
-  const maxRetries = Infinity; // 设置最大重试次数
+  const maxRetries = Infinity;
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
   while (true) {
@@ -68,7 +68,7 @@ const updatejikanAPIPeopleData = async () => {
 
         if (peoplePage.length === 0) {
           console.log("No more people to fetch. Ending function.");
-          return; // 没有更多的数据时退出整个函数
+          return;
         }
 
         for (const people of peoplePage) {
@@ -76,17 +76,17 @@ const updatejikanAPIPeopleData = async () => {
           await savePeopleToDb(people);
         }
 
-        page++; // 成功获取数据，递增页面号并跳出重试循环
+        page++;
         break;
       } catch (error) {
         console.error(`Error fetching page ${page}: ${error}`);
         retries++;
         if (retries >= maxRetries) {
           console.error(`Max retries reached for page ${page}. Skipping.`);
-          break; // 达到最大重试次数，跳过当前页面
+          break;
         }
         console.log(`Retrying page ${page}... Attempt ${retries}`);
-        await sleep(10000); // 等待一段时间后重试
+        await sleep(10000);
       }
     }
   }
