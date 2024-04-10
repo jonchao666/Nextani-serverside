@@ -11,7 +11,7 @@ require("firebase/auth");
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyBUh34fVGomF1fmLtmwZyW_FIi9jRVZYFM",
+  apiKey: process.env.FIREBASE_API_KEY,
   authDomain: "nextani-415707.firebaseapp.com",
   projectId: "nextani-415707",
   storageBucket: "nextani-415707.appspot.com",
