@@ -1,5 +1,5 @@
 const firebaseAdmin = require("firebase-admin");
-const serviceAccount = require("./secrets/nextani-415707-firebase-adminsdk-6khbb-861a38f717.json");
+const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 
 firebaseAdmin.initializeApp({
   credential: firebaseAdmin.credential.cert(serviceAccount),
