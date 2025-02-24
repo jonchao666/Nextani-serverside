@@ -47,7 +47,7 @@ router.get("/", verifyApiKey, async (req, res) => {
 
     if (year) {
       if (Array.isArray(year)) {
-        query["apiData.aired.prop.from.year"] = year.map((y) => Number(y));
+        query["apiData.aired.prop.from.year"] = { $in: year.map((y) => Number(y)) };
       } else {
         query["apiData.aired.prop.from.year"] = Number(year);
       }
